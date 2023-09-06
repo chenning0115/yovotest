@@ -25,6 +25,7 @@ import time
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
+from contrib.taskdb import task_db_handler
 
 try:
     import comet_ml  # must be imported before torch (if installed)
@@ -441,6 +442,7 @@ def train(hyp, opt, device, callbacks):  # hyp is path/to/hyp.yaml or hyp dictio
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
+    parser.add_argument('--taskid', type=str, default=1001, help='task id')
     parser.add_argument('--weights', type=str, default=ROOT / 'yolov5s.pt', help='initial weights path')
     parser.add_argument('--cfg', type=str, default='', help='model.yaml path')
     parser.add_argument('--data', type=str, default=ROOT / 'data/coco128.yaml', help='dataset.yaml path')
@@ -489,8 +491,8 @@ def main(opt, callbacks=Callbacks()):
     # Checks
     if RANK in {-1, 0}:
         print_args(vars(opt))
-        check_git_status()
-        check_requirements(ROOT / 'requirements.txt')
+        # check_git_status()
+        # check_requirements(ROOT / 'requirements.txt')
 
     # Resume (from specified or most recent last.pt)
     if opt.resume and not check_comet_resume(opt) and not opt.evolve:
@@ -516,7 +518,10 @@ def main(opt, callbacks=Callbacks()):
             opt.exist_ok, opt.resume = opt.resume, False  # pass resume to exist_ok and disable resume
         if opt.name == 'cfg':
             opt.name = Path(opt.cfg).stem  # use model.yaml as name
-        opt.save_dir = str(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))
+        # TODO: save_dir
+        # opt.save_dir = str(increment_path(Path(opt.project) / opt.name, exist_ok=opt.exist_ok))
+        opt.save_dir = task_db_handler.get_res_path(opt.taskid)
+        print("chenning, save_dir=%s" % opt.save_dir)
 
     # DDP mode
     device = select_device(opt.device, batch_size=opt.batch_size)
